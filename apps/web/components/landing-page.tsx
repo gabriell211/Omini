@@ -29,7 +29,7 @@ export function LandingPage() {
       <div className="landing-cta"><Link href="/cadastro" className="landing-primary">Começar agora <Icon name="arrow-right" size={18} /></Link><span>R$ 49,90 por mês</span></div>
       <div className="landing-preview" aria-label="Prévia do painel Omni">
         <div className="preview-nav"><span className="preview-logo"><Logo compact inverse /></span><i /><i /><i /></div>
-        <div className="preview-body"><aside><span /><span className="active" /><span /><span /><span /></aside><section><div className="preview-title"><span /><span /></div><div className="preview-metrics"><i /><i /><i /></div><div className="preview-content"><i /><i /></div></section></div>
+        <div className="preview-body"><aside><span /><span className="active" /><span /><span /><span /></aside><section><div className="preview-title"><div><small>VISÃO GERAL</small><strong>Bom dia, Gabriel</strong></div><span>Hoje, 15 ago</span></div><div className="preview-metrics"><article><small>Faturamento</small><strong>R$ 8.420</strong><em>↗ 12,4%</em></article><article><small>Pedidos</small><strong>126</strong><em>↗ 8,1%</em></article><article><small>Estoque baixo</small><strong>04</strong><em className="alert">ver itens</em></article></div><div className="preview-content"><article className="preview-chart"><div><small>Vendas da semana</small><strong>R$ 42.680</strong></div><div className="chart-bars"><i /><i /><i /><i /><i /><i /><i /></div></article><article className="preview-activity"><small>ÚLTIMAS ATIVIDADES</small><p><i /> Pedido #2841 <strong>R$ 142,90</strong></p><p><i /> Estoque atualizado <strong>agora</strong></p></article></div></section></div>
       </div>
     </section>
 
