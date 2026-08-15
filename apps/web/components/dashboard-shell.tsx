@@ -27,10 +27,27 @@ const quickActions: readonly { readonly label: string; readonly icon: IconName; 
   { label: "Ver agenda", icon: "calendar", tone: "plain" }
 ];
 
+const moduleRoutes: Readonly<Record<string, Route>> = {
+  Restaurante: "/restaurante",
+  Supermercado: "/supermercado",
+  Farmácia: "/farmacia",
+  Advocacia: "/advocacia",
+  Veterinária: "/veterinaria",
+  Oficina: "/oficina",
+  Materiais: "/materiais",
+  Veículos: "/veiculos"
+};
+
 export function DashboardShell() {
   const router = useRouter();
   const [activeModule, setActiveModule] = useState("Visão geral");
   const [navigationOpen, setNavigationOpen] = useState(false);
+
+  function selectModule(label: string) {
+    const route = moduleRoutes[label];
+    if (route) router.push(route); else setActiveModule(label);
+    setNavigationOpen(false);
+  }
 
   return (
     <div className="app-shell">
@@ -47,12 +64,7 @@ export function DashboardShell() {
               type="button"
               key={module.label}
               aria-current={activeModule === module.label ? "page" : undefined}
-              onClick={() => {
-                const routes: Record<string, Route> = { Restaurante: "/restaurante", Veterinária: "/veterinaria", Oficina: "/oficina", Materiais: "/materiais", Veículos: "/veiculos" };
-                const route = routes[module.label];
-                if (route) router.push(route); else setActiveModule(module.label);
-                setNavigationOpen(false);
-              }}
+              onClick={() => selectModule(module.label)}
             >
               <Icon name={module.icon} size={19} />
               <span>{module.label}</span>
@@ -141,7 +153,7 @@ export function DashboardShell() {
             <article className="panel modules-panel">
               <div className="section-header"><div><h2>Seus sistemas</h2><p>Troque de contexto sem perder a visão.</p></div><button className="icon-button" type="button" aria-label="Todos os sistemas"><Icon name="grid" /></button></div>
               <div className="module-list">
-                {modules.slice(1).map((module) => <button key={module.label} type="button" onClick={() => setActiveModule(module.label)}><span className="module-icon"><Icon name={module.icon} size={19} /></span><span><strong>{module.label}</strong><small>{module.description}</small></span><Icon name="arrow-right" size={16} /></button>)}
+                {modules.slice(1).map((module) => <button key={module.label} type="button" onClick={() => selectModule(module.label)}><span className="module-icon"><Icon name={module.icon} size={19} /></span><span><strong>{module.label}</strong><small>{module.description}</small></span><Icon name="arrow-right" size={16} /></button>)}
               </div>
             </article>
           </section>

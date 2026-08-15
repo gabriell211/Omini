@@ -67,6 +67,13 @@ export class OrganizationService {
       ? membership.permissions.filter((permission): permission is Permission => permissions.includes(permission as Permission))
       : [];
   }
+
+  public async assertVerticalEnabled(organizationId: string, vertical: Vertical): Promise<void> {
+    const enabled = await this.database.withTenant(organizationId, (transaction) => transaction.organizationVertical.findUnique({
+      where: { organizationId_vertical: { organizationId, vertical } }
+    }));
+    if (!enabled) throw new Error("FORBIDDEN_VERTICAL");
+  }
 }
 
 function isSubscriptionStatus(value: string): value is "pending" | "active" | "past_due" | "cancelled" {

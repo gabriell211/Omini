@@ -12,3 +12,5 @@ apps/api/src/generated/
 apps/api/prisma.config.js
 apps/api/prisma.config.js.map
 apps/api/prisma.config.d.ts
+
+.vercel
