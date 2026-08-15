@@ -2,6 +2,10 @@
   "name": "omni-business-platform",
   "private": true,
   "version": "0.1.0",
+  "engines": {
+    "node": ">=20.9.0",
+    "npm": ">=11.0.0"
+  },
   "packageManager": "npm@11.13.0",
   "workspaces": [
     "apps/*",
