@@ -6,6 +6,7 @@ import { assertPermission, assertSubscriptionActive, verticals, type RequestCont
 import { z } from "zod";
 import { JwtAuthenticator } from "./auth.js";
 import { BillingWebhookService } from "./application/billing-webhook-service.js";
+import { InfinitePayService } from "./application/infinitepay-service.js";
 import { OrganizationService } from "./application/organization-service.js";
 import { RestaurantService } from "./application/restaurant-service.js";
 import { SupermarketService } from "./application/supermarket-service.js";
@@ -31,6 +32,11 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
   const restaurant = new RestaurantService(database);
   const supermarket = new SupermarketService(database);
   const billing = new BillingWebhookService(database, config.BILLING_WEBHOOK_SECRET);
+  const infinitePay = new InfinitePayService(database, {
+    handle: config.INFINITEPAY_HANDLE,
+    webhookUrl: config.INFINITEPAY_WEBHOOK_URL,
+    redirectUrl: config.INFINITEPAY_REDIRECT_URL
+  });
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
@@ -42,7 +48,7 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
   app.get("/health", async () => ({ status: "ok" }));
 
   app.addHook("onRequest", async (request, reply) => {
-    if (request.routeOptions.url === "/health" || request.routeOptions.url === "/v1/webhooks/billing") return;
+    if (request.routeOptions.url === "/health" || request.routeOptions.url === "/v1/webhooks/billing" || request.routeOptions.url === "/v1/webhooks/infinitepay") return;
 
     try {
       const actor = await authenticator.authenticate(getHeader(request, "authorization"));
@@ -109,6 +115,35 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
       const statusCode = code === "INVALID_WEBHOOK_SIGNATURE" ? 401 : code === "UNSUPPORTED_BILLING_EVENT" ? 422 : 400;
       return reply.code(statusCode).send({ error: code });
     }
+  });
+
+  app.post("/v1/webhooks/infinitepay", async (request, reply) => {
+    try {
+      const result = await infinitePay.confirmWebhook(infinitePay.parseWebhook(request.body));
+      return reply.code(200).send({ received: true, ...result });
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "INFINITEPAY_WEBHOOK_FAILED";
+      const statusCode = code === "CHECKOUT_SESSION_NOT_FOUND" ? 404
+        : code === "PAYMENT_AMOUNT_MISMATCH" || code === "PAYMENT_NOT_VERIFIED" ? 400
+          : code === "INFINITEPAY_NOT_CONFIGURED" ? 503
+            : 400;
+      return reply.code(statusCode).send({ error: code });
+    }
+  });
+
+  app.post("/v1/billing/infinitepay/checkout", async (request, reply) => {
+    try {
+      assertPermission(request.context!.actor, "billing.manage");
+      const body = z.object({
+        customer: z.object({
+          name: z.string().trim().min(2).max(160).optional(),
+          email: z.email().max(254).optional(),
+          phoneNumber: z.string().trim().min(8).max(20).optional()
+        }).optional()
+      }).parse(request.body ?? {});
+      const data = await infinitePay.createMonthlyCheckout(request.context!.organizationId, body.customer);
+      return reply.code(201).send({ data });
+    } catch (error) { return domainError(reply, error); }
   });
 
   app.post("/v1/restaurants/tables", async (request, reply) => {

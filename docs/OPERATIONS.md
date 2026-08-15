@@ -68,6 +68,32 @@ alteração. Cada provedor real (Stripe, Mercado Pago, Asaas etc.) deve ter um
 adaptador que valide o esquema e a assinatura próprios e então converta para esse
 contrato interno. Nunca reutilize o segredo de um provedor em outro.
 
+## InfinitePay
+
+Para a assinatura Omni de R$ 49,90, configure no ambiente **somente da API**:
+
+```text
+INFINITEPAY_HANDLE=sua_infinite_tag_sem_o_cifrao
+INFINITEPAY_WEBHOOK_URL=https://api.seudominio.com/v1/webhooks/infinitepay
+INFINITEPAY_REDIRECT_URL=https://www.seudominio.com/pagamento
+```
+
+O endpoint autenticado `POST /v1/billing/infinitepay/checkout` cria um link de
+checkout, vinculado a uma organização, e responde com `checkoutUrl`. Ele envia à
+InfinitePay o valor de 4.990 centavos, uma `order_nsu` opaca e as URLs acima.
+
+A URL pública da InfinitePay é `POST /v1/webhooks/infinitepay`. Ela não libera a
+conta apenas pelo corpo recebido: localiza a sessão criada, confere o valor e faz
+uma consulta servidor-a-servidor em `POST /payment_check`. Somente uma resposta
+`paid: true` com o valor exato atualiza a assinatura para `active`. O
+`transaction_nsu` é único, então reenvios são idempotentes.
+
+A documentação pública atual do checkout não descreve assinatura criptográfica
+para o webhook. Por isso, não configure `BILLING_WEBHOOK_SECRET` como se ele
+protegesse esse endpoint; a confirmação em `payment_check` é a barreira de
+segurança desta integração. Guarde `INFINITEPAY_HANDLE` e os identificadores de
+transação como dados operacionais e jamais no frontend.
+
 ## Fiscal e setores regulados
 
 O sistema ainda não transmite documentos fiscais, receitas ou dados regulados.

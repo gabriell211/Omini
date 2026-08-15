@@ -28,6 +28,7 @@ model Organization {
   inventoryBalances InventoryBalance[]
   supermarketSales  SupermarketSale[]
   billingEvents     BillingEvent[]
+  checkoutSessions  CheckoutSession[]
 
   @@map("organizations")
 }
@@ -84,6 +85,25 @@ model BillingEvent {
 
   @@index([organizationId, createdAt])
   @@map("billing_events")
+}
+
+model CheckoutSession {
+  id                  String        @id @default(uuid()) @db.Uuid
+  organizationId      String        @map("organization_id") @db.Uuid
+  provider            String        @db.VarChar(40)
+  orderNsu            String        @unique @map("order_nsu") @db.VarChar(191)
+  providerInvoiceSlug String?       @unique @map("provider_invoice_slug") @db.VarChar(191)
+  providerTransactionNsu String?    @unique @map("provider_transaction_nsu") @db.VarChar(191)
+  amountCents         Int           @map("amount_cents")
+  status              String        @default("created") @db.VarChar(16)
+  checkoutUrl         String?       @map("checkout_url")
+  providerPayload     Json?         @map("provider_payload")
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  paidAt              DateTime?     @map("paid_at") @db.Timestamptz(6)
+  organization        Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, status, createdAt])
+  @@map("checkout_sessions")
 }
 
 model AuditEvent {

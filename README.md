@@ -99,6 +99,11 @@ Para conectar um checkout hospedado, configure em produção:
 NEXT_PUBLIC_BILLING_CHECKOUT_URL=https://checkout-do-seu-provedor
 ```
 
+Para usar o checkout integrado da InfinitePay, configure a `INFINITEPAY_HANDLE`
+somente na API. A rota autenticada cria um checkout exclusivo para a organização
+e o webhook confirma o pagamento diretamente com a InfinitePay antes de liberar
+o acesso. Veja o [guia de operação](docs/OPERATIONS.md#infinitepay).
+
 O provedor deve enviar a confirmação para uma rota pública da API, por exemplo:
 
 ```text
