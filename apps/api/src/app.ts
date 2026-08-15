@@ -47,7 +47,14 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
   await app.register(rawBody, { field: "rawBody", global: false, encoding: false, runFirst: true });
   app.addHook("onClose", async () => database.disconnect());
 
-  app.get("/health", async () => ({ status: "ok" }));
+  app.get("/health", async (_request, reply) => {
+    try {
+      await database.client.$queryRaw`SELECT 1`;
+      return { status: "ok", database: "reachable", authentication: authenticator.isConfigured ? "configured" : "pending_configuration" };
+    } catch {
+      return reply.code(503).send({ status: "unavailable", database: "unreachable" });
+    }
+  });
 
   app.addHook("onRequest", async (request, reply) => {
     if (request.routeOptions.url === "/health" || request.routeOptions.url === "/v1/webhooks/billing" || request.routeOptions.url === "/v1/webhooks/infinitepay") return;
@@ -84,7 +91,7 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
       };
     } catch (error) {
       const code = error instanceof Error ? error.message : "UNAUTHENTICATED";
-      const statusCode = code.startsWith("FORBIDDEN") ? 403 : code === "ORGANIZATION_REQUIRED" ? 400 : 401;
+      const statusCode = code === "AUTH_CONFIGURATION_REQUIRED" ? 503 : code.startsWith("FORBIDDEN") ? 403 : code === "ORGANIZATION_REQUIRED" ? 400 : 401;
       return reply.code(statusCode).send({ error: code, correlationId: request.id });
     }
   });

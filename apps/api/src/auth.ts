@@ -21,13 +21,20 @@ function subscriptionStatus(value: unknown): SubscriptionStatus {
 }
 
 export class JwtAuthenticator {
-  private readonly jwks: ReturnType<typeof createRemoteJWKSet>;
+  private readonly jwks?: ReturnType<typeof createRemoteJWKSet>;
 
   public constructor(private readonly config: AppConfig) {
-    this.jwks = createRemoteJWKSet(new URL(config.JWT_JWKS_URL));
+    if (config.JWT_JWKS_URL) this.jwks = createRemoteJWKSet(new URL(config.JWT_JWKS_URL));
+  }
+
+  public get isConfigured(): boolean {
+    return Boolean(this.jwks && this.config.JWT_ISSUER && this.config.JWT_AUDIENCE);
   }
 
   public async authenticate(authorization?: string): Promise<AuthenticatedActor> {
+    if (!this.isConfigured || !this.jwks || !this.config.JWT_ISSUER || !this.config.JWT_AUDIENCE) {
+      throw new Error("AUTH_CONFIGURATION_REQUIRED");
+    }
     if (!authorization?.startsWith("Bearer ")) {
       throw new Error("UNAUTHENTICATED");
     }
