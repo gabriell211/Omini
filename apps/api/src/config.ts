@@ -23,8 +23,9 @@ export type AppConfig = z.infer<typeof environment>;
 export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
   return environment.parse({
     ...source,
-    // The Neon Vercel integration uses a prefix so it can coexist with a
-    // previous DATABASE_URL during the infrastructure transition.
-    DATABASE_URL: source.OMNI_NEON_DATABASE_URL ?? source.DATABASE_URL
+    // Prefer the application's explicitly managed connection. The prefixed
+    // Vercel marketplace value remains a non-destructive fallback while the
+    // infrastructure transition is in progress.
+    DATABASE_URL: source.DATABASE_URL ?? source.OMNI_NEON_DATABASE_URL
   });
 }

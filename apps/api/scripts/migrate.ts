@@ -3,8 +3,10 @@ import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { Client } from "pg";
 
-const databaseUrl = process.env.OMNI_NEON_DATABASE_URL ?? process.env.DATABASE_URL;
-if (!databaseUrl) throw new Error("DATABASE_URL or OMNI_NEON_DATABASE_URL is required to apply migrations.");
+// Migrations need a direct connection; the pooled URL is reserved for
+// serverless application traffic.
+const databaseUrl = process.env.DATABASE_URL_UNPOOLED ?? process.env.OMNI_NEON_DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL ?? process.env.OMNI_NEON_DATABASE_URL;
+if (!databaseUrl) throw new Error("A direct Neon connection URL is required to apply migrations.");
 
 const migrationsDirectory = fileURLToPath(new URL("../../../database/migrations/", import.meta.url));
 const files = (await readdir(migrationsDirectory)).filter((file) => /^\d+_.+\.sql$/.test(file)).sort();

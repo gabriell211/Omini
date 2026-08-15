@@ -7,8 +7,10 @@ export default defineConfig({
   // requires DATABASE_URL through AppConfig before the API can start.
   datasource: {
     url:
-      process.env.OMNI_NEON_DATABASE_URL ??
+      process.env.DATABASE_URL_UNPOOLED ??
+      process.env.OMNI_NEON_DATABASE_URL_UNPOOLED ??
       process.env.DATABASE_URL ??
+      process.env.OMNI_NEON_DATABASE_URL ??
       "postgresql://placeholder:placeholder@localhost:5432/placeholder"
   }
 });
