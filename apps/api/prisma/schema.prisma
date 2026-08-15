@@ -29,6 +29,14 @@ model Organization {
   supermarketSales  SupermarketSale[]
   billingEvents     BillingEvent[]
   checkoutSessions  CheckoutSession[]
+  pharmacyLots      PharmacyLot[]
+  legalCases        LegalCase[]
+  veterinaryPatients VeterinaryPatient[]
+  veterinaryAppointments VeterinaryAppointment[]
+  repairOrders      RepairOrder[]
+  buildingQuotes    BuildingQuote[]
+  vehicleInventory  VehicleInventory[]
+  vehicleLeads      VehicleLead[]
 
   @@map("organizations")
 }
@@ -226,4 +234,139 @@ model SupermarketSaleItem {
   product   Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@map("supermarket_sale_items")
+}
+
+model PharmacyLot {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  productName    String       @map("product_name") @db.VarChar(160)
+  batchNumber    String       @map("batch_number") @db.VarChar(80)
+  expiresAt      DateTime     @map("expires_at") @db.Date
+  quantity       Int
+  status         String       @default("available") @db.VarChar(16)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, productName, batchNumber])
+  @@index([organizationId, expiresAt])
+  @@map("pharmacy_lots")
+}
+
+model LegalCase {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  caseNumber     String       @map("case_number") @db.VarChar(80)
+  title          String       @db.VarChar(180)
+  clientName     String       @map("client_name") @db.VarChar(160)
+  status         String       @default("open") @db.VarChar(16)
+  nextDeadline   DateTime?    @map("next_deadline") @db.Date
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, caseNumber])
+  @@index([organizationId, status, nextDeadline])
+  @@map("legal_cases")
+}
+
+model VeterinaryPatient {
+  id             String                  @id @default(uuid()) @db.Uuid
+  organizationId String                  @map("organization_id") @db.Uuid
+  name           String                  @db.VarChar(120)
+  species        String                  @db.VarChar(40)
+  breed          String?                 @db.VarChar(80)
+  guardianName   String                  @map("guardian_name") @db.VarChar(160)
+  status         String                  @default("active") @db.VarChar(16)
+  createdAt      DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                @default(now()) @map("updated_at") @db.Timestamptz(6)
+  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  appointments   VeterinaryAppointment[]
+
+  @@index([organizationId, name])
+  @@map("veterinary_patients")
+}
+
+model VeterinaryAppointment {
+  id             String            @id @default(uuid()) @db.Uuid
+  organizationId String            @map("organization_id") @db.Uuid
+  patientId      String            @map("patient_id") @db.Uuid
+  scheduledAt    DateTime          @map("scheduled_at") @db.Timestamptz(6)
+  appointmentType String           @map("appointment_type") @db.VarChar(80)
+  status         String            @default("scheduled") @db.VarChar(16)
+  notes          String?
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  patient        VeterinaryPatient @relation(fields: [patientId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, scheduledAt])
+  @@map("veterinary_appointments")
+}
+
+model RepairOrder {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  orderNumber    String       @map("order_number") @db.VarChar(80)
+  customerName   String       @map("customer_name") @db.VarChar(160)
+  vehicle        String       @db.VarChar(160)
+  status         String       @default("open") @db.VarChar(16)
+  estimateCents  Int          @default(0) @map("estimate_cents")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, orderNumber])
+  @@index([organizationId, status])
+  @@map("repair_orders")
+}
+
+model BuildingQuote {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  quoteNumber    String       @map("quote_number") @db.VarChar(80)
+  customerName   String       @map("customer_name") @db.VarChar(160)
+  status         String       @default("draft") @db.VarChar(16)
+  totalCents     Int          @default(0) @map("total_cents")
+  deliveryDate   DateTime?    @map("delivery_date") @db.Date
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, quoteNumber])
+  @@index([organizationId, status, deliveryDate])
+  @@map("building_quotes")
+}
+
+model VehicleInventory {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  stockNumber    String       @map("stock_number") @db.VarChar(80)
+  make           String       @db.VarChar(80)
+  model          String       @db.VarChar(120)
+  modelYear      Int          @map("model_year")
+  priceCents     Int          @map("price_cents")
+  status         String       @default("available") @db.VarChar(16)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, stockNumber])
+  @@index([organizationId, status])
+  @@map("vehicle_inventory")
+}
+
+model VehicleLead {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  customerName   String       @map("customer_name") @db.VarChar(160)
+  phone          String?      @db.VarChar(20)
+  interest       String       @db.VarChar(160)
+  status         String       @default("new") @db.VarChar(16)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, status, createdAt])
+  @@map("vehicle_leads")
 }
