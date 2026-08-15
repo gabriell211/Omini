@@ -1,0 +1,16 @@
+{
+  "name": "omni-business-platform",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "npm@11.13.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=@omni/contracts && npm run build --workspace=@omni/api && npm run build --workspace=@omni/web",
+    "test": "npm run test --workspaces --if-present",
+    "dev:api": "npm run dev --workspace=@omni/api",
+    "dev:web": "npm run dev --workspace=@omni/web"
+  }
+}
