@@ -28,11 +28,11 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@types/node": "^24.10.1",
+    "@types/node": "^26.2.0",
     "@types/pg": "^8.15.5",
     "prisma": "^7.9.1",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "vitest": "^4.0.9"
   }
 }
