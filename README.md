@@ -14,8 +14,12 @@ isolados para cada tipo de negócio.
 - Bloqueio de acesso no frontend e na API até a assinatura estar ativa.
 - Dashboard principal e telas operacionais para Restaurante, Veterinária,
   Oficina, Materiais de Construção e Loja de Carros.
-- Contratos TypeScript compartilhados, RBAC, JWT/OIDC, auditoria e isolamento
-  de tenant planejado com PostgreSQL Row-Level Security.
+- Prisma 7 + PostgreSQL persistente, RBAC consultado por organização, auditoria
+  e Row-Level Security para o isolamento de tenant.
+- Criação transacional de organizações, assinatura pendente e membro proprietário.
+- Base operacional de Restaurante (mesas, pedidos e fluxo de cozinha) e
+  Supermercado (produtos, estoque e venda com baixa atômica).
+- Webhook HMAC idempotente que atualiza a assinatura no banco.
 
 ## Verticais de negócio
 
@@ -56,6 +60,7 @@ escalar de forma independente.
 
 ```bash
 npm install
+npm run prisma:generate --workspace=@omni/api
 npm run dev:web
 ```
 
@@ -97,12 +102,14 @@ NEXT_PUBLIC_BILLING_CHECKOUT_URL=https://checkout-do-seu-provedor
 O provedor deve enviar a confirmação para uma rota pública da API, por exemplo:
 
 ```text
-https://api.seudominio.com/v1/webhooks/pagamento
+https://api.seudominio.com/v1/webhooks/billing
 ```
 
 > Nunca confie somente no redirecionamento do navegador como prova de pagamento.
-> A assinatura deve ser ativada apenas depois da validação criptográfica do
-> webhook e refletida no `subscription_status` do token do usuário.
+> A assinatura é ativada apenas depois da validação criptográfica do webhook.
+> A API resolve o `subscription_status` persistente por organização em cada
+> requisição; o token OIDC serve para provar a identidade, não como fonte de
+> verdade de cobrança.
 
 ## Publicação na Vercel
 
@@ -123,14 +130,15 @@ Route Handler do Next.js com validação de assinatura do provedor escolhido.
 - [Cobertura competitiva](docs/COMPETITIVE-COVERAGE.md)
 - [Segurança](docs/SECURITY.md)
 - [Roadmap](docs/ROADMAP.md)
+- [Operação da API, Prisma e webhook](docs/OPERATIONS.md)
 
 ## Próximos marcos
 
-1. Autenticação real, banco persistente e criação de organizações.
-2. Integração de pagamento, webhook assinado e emissão de `subscription_status`.
-3. CRUDs e regras de domínio para Restaurante e Supermercado.
-4. Integrações fiscais e reguladas com parceiros homologados.
-5. Observabilidade, deploy contínuo e testes E2E.
+1. Conectar o provedor OIDC escolhido e configurar o domínio de produção.
+2. Implementar o adaptador do provedor de cobrança contratado no contrato de webhook.
+3. Completar listagens, edição, auditoria e interfaces dos CRUDs iniciais.
+4. Contratar parceiros fiscais/regulados e desenvolver adaptadores homologados.
+5. Adicionar telemetria centralizada, deploy da API e cenários E2E com infraestrutura efêmera.
 
 ## Contribuição
 

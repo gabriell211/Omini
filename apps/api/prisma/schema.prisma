@@ -1,0 +1,209 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Organization {
+  id        String   @id @default(uuid()) @db.Uuid
+  legalName String   @map("legal_name")
+  tradeName String   @map("trade_name")
+  taxId     String   @unique @map("tax_id") @db.VarChar(18)
+  status    String   @default("trial")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  verticals         OrganizationVertical[]
+  memberships       Membership[]
+  subscription      Subscription?
+  auditEvents       AuditEvent[]
+  restaurantTables  RestaurantTable[]
+  restaurantOrders  RestaurantOrder[]
+  products          Product[]
+  inventoryBalances InventoryBalance[]
+  supermarketSales  SupermarketSale[]
+  billingEvents     BillingEvent[]
+
+  @@map("organizations")
+}
+
+model OrganizationVertical {
+  organizationId String       @map("organization_id") @db.Uuid
+  vertical       String       @db.VarChar(32)
+  enabledAt      DateTime     @default(now()) @map("enabled_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@id([organizationId, vertical])
+  @@map("organization_verticals")
+}
+
+model Membership {
+  organizationId  String       @map("organization_id") @db.Uuid
+  identitySubject String       @map("identity_subject")
+  role            String
+  permissions     Json         @default("[]")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  revokedAt       DateTime?    @map("revoked_at") @db.Timestamptz(6)
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@id([organizationId, identitySubject])
+  @@map("memberships")
+}
+
+model Subscription {
+  id                     String       @id @default(uuid()) @db.Uuid
+  organizationId         String       @unique @map("organization_id") @db.Uuid
+  status                 String       @default("pending") @db.VarChar(16)
+  provider               String       @db.VarChar(40)
+  providerCustomerId     String?      @unique @map("provider_customer_id") @db.VarChar(191)
+  providerSubscriptionId String?      @unique @map("provider_subscription_id") @db.VarChar(191)
+  currentPeriodEnd       DateTime?    @map("current_period_end") @db.Timestamptz(6)
+  createdAt              DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  organization           Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@map("subscriptions")
+}
+
+model BillingEvent {
+  id              String        @id @default(uuid()) @db.Uuid
+  organizationId  String?       @map("organization_id") @db.Uuid
+  provider        String        @db.VarChar(40)
+  providerEventId String        @unique @map("provider_event_id") @db.VarChar(191)
+  eventType       String        @map("event_type") @db.VarChar(100)
+  payload         Json
+  processedAt     DateTime?     @map("processed_at") @db.Timestamptz(6)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, createdAt])
+  @@map("billing_events")
+}
+
+model AuditEvent {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  actorSubject   String?      @map("actor_subject")
+  correlationId  String       @map("correlation_id")
+  action         String       @db.VarChar(120)
+  aggregateType  String       @map("aggregate_type") @db.VarChar(100)
+  aggregateId    String       @map("aggregate_id")
+  beforeData     Json?        @map("before_data")
+  afterData      Json?        @map("after_data")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@map("audit_events")
+}
+
+model RestaurantTable {
+  id             String            @id @default(uuid()) @db.Uuid
+  organizationId String            @map("organization_id") @db.Uuid
+  name           String            @db.VarChar(80)
+  capacity       Int
+  status         String            @default("available") @db.VarChar(16)
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  orders         RestaurantOrder[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, status])
+  @@map("restaurant_tables")
+}
+
+model RestaurantOrder {
+  id             String               @id @default(uuid()) @db.Uuid
+  organizationId String               @map("organization_id") @db.Uuid
+  tableId        String?              @map("table_id") @db.Uuid
+  status         String               @default("open") @db.VarChar(16)
+  subtotalCents  Int                  @default(0) @map("subtotal_cents")
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime             @default(now()) @map("updated_at") @db.Timestamptz(6)
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  table          RestaurantTable?     @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  items          RestaurantOrderItem[]
+
+  @@index([organizationId, status, createdAt])
+  @@map("restaurant_orders")
+}
+
+model RestaurantOrderItem {
+  id        String          @id @default(uuid()) @db.Uuid
+  orderId   String          @map("order_id") @db.Uuid
+  name      String          @db.VarChar(160)
+  quantity  Int
+  unitCents Int             @map("unit_cents")
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  order     RestaurantOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("restaurant_order_items")
+}
+
+model Product {
+  id             String                 @id @default(uuid()) @db.Uuid
+  organizationId String                 @map("organization_id") @db.Uuid
+  sku            String                 @db.VarChar(80)
+  barcode        String?                @db.VarChar(32)
+  name           String                 @db.VarChar(160)
+  unit           String                 @default("UN") @db.VarChar(8)
+  salePriceCents Int                    @map("sale_price_cents")
+  active         Boolean                @default(true)
+  createdAt      DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime               @default(now()) @map("updated_at") @db.Timestamptz(6)
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  balances       InventoryBalance[]
+  saleItems      SupermarketSaleItem[]
+
+  @@unique([organizationId, sku])
+  @@index([organizationId, barcode])
+  @@map("products")
+}
+
+model InventoryBalance {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  productId      String       @map("product_id") @db.Uuid
+  quantity       Int          @default(0)
+  updatedAt      DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  product        Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, productId])
+  @@index([organizationId, quantity])
+  @@map("inventory_balances")
+}
+
+model SupermarketSale {
+  id             String                @id @default(uuid()) @db.Uuid
+  organizationId String                @map("organization_id") @db.Uuid
+  status         String                @default("open") @db.VarChar(16)
+  totalCents     Int                   @default(0) @map("total_cents")
+  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime              @default(now()) @map("updated_at") @db.Timestamptz(6)
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  items          SupermarketSaleItem[]
+
+  @@index([organizationId, status, createdAt])
+  @@map("supermarket_sales")
+}
+
+model SupermarketSaleItem {
+  id        String          @id @default(uuid()) @db.Uuid
+  saleId    String          @map("sale_id") @db.Uuid
+  productId String          @map("product_id") @db.Uuid
+  quantity  Int
+  unitCents Int             @map("unit_cents")
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  sale      SupermarketSale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@map("supermarket_sale_items")
+}
